@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prédiction Engie — API DNN</title>
+  <style>
+    body { font-family: sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.25rem; }
+    .info { background: #f0f0f0; padding: 0.75rem; border-radius: 6px; margin: 1rem 0; font-size: 0.9rem; }
+    code { background: #eee; padding: 0.2em 0.4em; border-radius: 4px; }
+    textarea { width: 100%; min-height: 80px; font-family: monospace; }
+    button { margin-top: 0.5rem; padding: 0.5rem 1rem; cursor: pointer; }
+    .result { margin-top: 1rem; padding: 0.75rem; border-radius: 6px; }
+    .ok { background: #e8f5e9; }
+    .err { background: #ffebee; }
+  </style>
+</head>
+<body>
+  <h1>Prédiction de la production éolienne (Engie)</h1>
+  <p>Auteurs : SAADIOUI Badreddine, OUTZOULA Abderrazzak.</p>
+  <div class="info">
+    Envoyer un JSON avec la clé <code>features</code> : un tableau de {{ feature_count }} nombres (même ordre que les variables du modèle).
+    <br><br>
+    Exemple curl :
+    <br>
+    <code>curl -X POST -H "Content-Type: application/json" -d '{"features": [ ... ]}' http://localhost:5000/predict</code>
+  </div>
+  <label for="json">JSON (<code>features</code> = {{ feature_count }} nombres) :</label><br>
+  <textarea id="json" placeholder='{"features": [0.1, 0.2, ...]}'></textarea><br>
+  <button onclick="predict()">Prédire</button>
+  <div id="out" class="result" style="display:none;"></div>
+  <p><a href="/health">Vérifier l’état de l’API (/health)</a></p>
+  <script>
+    function predict() {
+      const out = document.getElementById('out');
+      out.style.display = 'block';
+      try {
+        const body = JSON.parse(document.getElementById('json').value);
+        fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.error) {
+            out.className = 'result err';
+            out.textContent = 'Erreur : ' + data.error;
+          } else {
+            out.className = 'result ok';
+            out.textContent = 'Prédiction : ' + data.prediction + ' ' + (data.unit || 'kW');
+          }
+        })
+        .catch(e => { out.className = 'result err'; out.textContent = 'Erreur : ' + e.message; });
+      } catch (e) {
+        out.className = 'result err';
+        out.textContent = 'JSON invalide : ' + e.message;
+      }
+    }
+  </script>
+</body>
+</html>

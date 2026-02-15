@@ -1,0 +1,32 @@
+services:
+  train:
+    build:
+      context: ./train
+      dockerfile: Dockerfile
+    image: engie-train
+    volumes:
+      - ./data:/data:ro
+      - ./model:/model
+    environment:
+      - DATA_DIR=/data
+      - MODEL_DIR=/model
+      - BATCH_SIZE=${BATCH_SIZE:-512}
+      - EPOCHS=${EPOCHS:-200}
+      - MAX_TRIALS=${MAX_TRIALS:-2}
+    restart: "no"
+
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    image: engie-app
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./model:/model:ro
+    environment:
+      - MODEL_DIR=/model
+    depends_on:
+      train:
+        condition: service_completed_successfully
+    restart: unless-stopped
